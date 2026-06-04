@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elementaria Bakery Cafe – Mumbai's Finest</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root {
+    --cream: #FFF8EE;
+    --warm-beige: #F5E6D3;
+    --sand: #E8D5BC;
+    --chocolate: #3D2314;
+    --dark-choc: #2A1609;
+    --burnt-orange: #C86B35;
+    --caramel: #D4924A;
+    --gold: #C9A86A;
+    --soft-brown: #8B5E3C;
+    --muted: #A08060;
+    --white: #FFFDF9;
+    --glass: rgba(255,248,238,0.12);
+    --glass-border: rgba(201,168,106,0.25);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--dark-choc);
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CUSTOM CURSOR */
+  .cursor {
+    position: fixed; width:14px; height:14px;
+    background: var(--gold); border-radius:50%;
+    pointer-events: none; z-index:99999;
+    transform: translate(-50%,-50%);
+    transition: transform 0.1s, width 0.2s, height 0.2s, background 0.2s;
+    mix-blend-mode: difference;
+  }
+  .cursor-ring {
+    position: fixed; width:38px; height:38px;
+    border:1.5px solid var(--gold); border-radius:50%;
+    pointer-events: none; z-index:99998;
+    transform: translate(-50%,-50%);
+    transition: all 0.18s cubic-bezier(.25,.46,.45,.94);
+    opacity: 0.6;
+  }
+  body:hover .cursor { opacity:1; }
+
+  /* LOADING SCREEN */
+  #loader {
+    position: fixed; inset:0; z-index:9999;
+    background: var(--dark-choc);
+    display: flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    transition: opacity 0.8s, visibility 0.8s;
+  }
+  #loader.hidden { opacity:0; visibility:hidden; }
+  .loader-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.5rem,6vw,4.5rem);
+    font-style: italic; color: var(--gold);
+    letter-spacing: 0.05em;
+    animation: pulseGold 2s ease-in-out infinite;
+  }
+  .loader-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem; color: var(--muted);
+    letter-spacing: 0.4em; text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
+  .loader-bar-wrap {
+    width: 220px; height:2px; background: rgba(201,168,106,0.2);
+    margin-top: 2.5rem; border-radius:2px; overflow:hidden;
+  }
+  .loader-bar {
+    height:100%; width:0%; background: linear-gradient(90deg, var(--caramel), var(--gold));
+    border-radius:2px; transition: width 0.3s ease;
+  }
+  .loader-pct {
+    font-size:0.75rem; color:var(--muted); margin-top:0.8rem;
+    letter-spacing:0.2em; font-family:'DM Sans',sans-serif;
+  }
+  @keyframes pulseGold { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+  /* CANVAS */
+  #three-canvas {
+    position: fixed; inset:0; z-index:1;
+    transition: opacity 0.5s;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top:0; left:0; right:0; z-index:100;
+    padding: 1.4rem 3rem;
+    display: flex; align-items:center; justify-content:space-between;
+    background: linear-gradient(180deg, rgba(26,9,3,0.95) 0%, transparent 100%);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .nav-logo {
+    font-family:'Playfair Display',serif; font-style:italic;
+    font-size:1.6rem; color:var(--gold); letter-spacing:0.03em;
+    text-shadow: 0 0 30px rgba(201,168,106,0.4);
+  }
+  .nav-logo span { font-style:normal; font-weight:300; color:var(--cream); font-size:0.85rem; display:block; letter-spacing:0.25em; text-transform:uppercase; margin-top:-2px; }
+  .nav-links { display:flex; gap:2.2rem; align-items:center; }
+  .nav-links a {
+    color:var(--warm-beige); text-decoration:none; font-size:0.82rem;
+    letter-spacing:0.12em; text-transform:uppercase; font-weight:400;
+    position:relative; transition:color 0.3s;
+  }
+  .nav-links a::after {
+    content:''; position:absolute; bottom:-4px; left:0; right:0; height:1px;
+    background:var(--gold); transform:scaleX(0); transition:transform 0.3s;
+  }
+  .nav-links a:hover { color:var(--gold); }
+  .nav-links a:hover::after { transform:scaleX(1); }
+  .nav-cta {
+    background: linear-gradient(135deg, var(--burnt-orange), var(--caramel));
+    color:var(--white)!important; padding:0.55rem 1.4rem; border-radius:50px;
+    font-weight:500!important; transition: box-shadow 0.3s, transform 0.2s;
+  }
+  .nav-cta:hover { box-shadow:0 0 25px rgba(200,107,53,0.45); transform:translateY(-1px); }
+  .nav-cta::after { display:none!important; }
+
+  /* HERO */
+  #hero {
+    position: relative; z-index:10;
+    min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    padding:6rem 2rem 4rem;
+    pointer-events:none;
+  }
+  .hero-eyebrow {
+    font-family:'Cormorant Garamond',serif;
+    font-size:0.9rem; letter-spacing:0.45em; text-transform:uppercase;
+    color:var(--gold); margin-bottom:1.2rem;
+    animation: fadeUp 1s ease 0.3s both;
+  }
+  .hero-title {
+    font-family:'Playfair Display',serif;
+    font-size: clamp(3.5rem,8vw,7rem);
+    line-height:1.05; font-style:italic; color:var(--cream);
+    text-shadow: 0 4px 40px rgba(0,0,0,0.5);
+    animation: fadeUp 1s ease 0.5s both;
+  }
+  .hero-title em { color:var(--gold); font-style:normal; }
+  .hero-sub {
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(1rem,2vw,1.35rem); color:var(--sand);
+    max-width:560px; line-height:1.7; margin:1.5rem auto 0;
+    font-weight:300; font-style:italic;
+    animation: fadeUp 1s ease 0.7s both;
+  }
+  .hero-ingredients {
+    display:flex; gap:2rem; justify-content:center;
+    margin-top:3rem; flex-wrap:wrap;
+    animation: fadeUp 1s ease 0.9s both;
+    pointer-events:all;
+  }
+  .ingredient-badge {
+    display:flex; flex-direction:column; align-items:center; gap:0.4rem;
+    padding:1rem 1.4rem; border:1px solid var(--glass-border);
+    border-radius:12px; background:var(--glass);
+    backdrop-filter:blur(10px); cursor:pointer;
+    transition:transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+    min-width:110px;
+  }
+  .ingredient-badge:hover {
+    transform:translateY(-6px);
+    border-color:var(--gold);
+    box-shadow:0 8px 30px rgba(201,168,106,0.25);
+  }
+  .ingredient-icon { font-size:1.8rem; }
+  .ingredient-name { font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--gold); }
+  .ingredient-desc { font-size:0.65rem; color:var(--muted); text-align:center; line-height:1.4; }
+  .hero-scroll {
+    position:absolute; bottom:2.5rem; left:50%; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:0.6rem;
+    pointer-events:all; animation: fadeUp 1s ease 1.1s both;
+  }
+  .hero-scroll span { font-size:0.65rem; letter-spacing:0.3em; text-transform:uppercase; color:var(--muted); }
+  .scroll-line { width:1px; height:50px; background:linear-gradient(180deg,var(--gold),transparent); animation:scrollPulse 2s ease-in-out infinite; }
+  @keyframes scrollPulse { 0%,100%{opacity:1;transform:scaleY(1)} 50%{opacity:0.4;transform:scaleY(0.7)} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+
+  /* SECTIONS WRAPPER */
+  .sections-wrapper { position:relative; z-index:10; }
+
+  /* SECTION BASE */
+  section {
+    padding: 7rem 4rem;
+    position:relative;
+  }
+  .section-label {
+    font-family:'Cormorant Garamond',serif; font-style:italic;
+    font-size:0.85rem; letter-spacing:0.35em; text-transform:uppercase;
+    color:var(--gold); margin-bottom:0.8rem; display:block;
+  }
+  .section-title {
+    font-family:'Playfair Display',serif; font-style:italic;
+    font-size:clamp(2.2rem,4vw,3.5rem); color:var(--cream); line-height:1.15;
+    margin-bottom:1.2rem;
+  }
+  .section-divider {
+    width:60px; height:1px; background:linear-gradient(90deg,var(--gold),transparent);
+    margin-bottom:2.5rem;
+  }
+
+  /* PRODUCTS SECTION */
+  #products { background: linear-gradient(180deg, var(--dark-choc) 0%, #1A0A04 100%); }
+  .products-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px,1fr));
+    gap:1.5rem; margin-top:1rem;
+  }
+  .product-card {
+    position:relative; overflow:hidden; border-radius:16px;
+    background: linear-gradient(145deg, rgba(255,248,238,0.06), rgba(201,168,106,0.04));
+    border:1px solid var(--glass-border);
+    padding:1.8rem; cursor:pointer;
+    transition: transform 0.4s cubic-bezier(.25,.46,.45,.94), box-shadow 0.4s, border-color 0.3s;
+    backdrop-filter:blur(8px);
+  }
+  .product-card::before {
+    content:''; position:absolute; inset:0; border-radius:16px;
+    background:linear-gradient(145deg,rgba(201,168,106,0.08),transparent);
+    opacity:0; transition:opacity 0.3s;
+  }
+  .product-card:hover { transform:translateY(-8px) scale(1.01); border-color:rgba(201,168,106,0.5); box-shadow:0 20px 50px rgba(0,0,0,0.4),0 0 30px rgba(201,168,106,0.1); }
+  .product-card:hover::before { opacity:1; }
+  .product-3d-preview {
+    width:100%; height:180px; border-radius:10px;
+    margin-bottom:1.2rem; overflow:hidden;
+    position:relative; background:rgba(0,0,0,0.25);
+  }
+  .product-3d-preview canvas { width:100%!important; height:100%!important; }
+  .product-badge {
+    position:absolute; top:10px; right:10px;
+    background:linear-gradient(135deg,var(--burnt-orange),var(--caramel));
+    color:var(--white); font-size:0.6rem; letter-spacing:0.1em;
+    text-transform:uppercase; padding:0.25rem 0.6rem; border-radius:20px;
+    font-weight:500;
+  }
+  .product-name { font-family:'Playfair Display',serif; font-style:italic; font-size:1.15rem; color:var(--cream); margin-bottom:0.4rem; }
+  .product-desc { font-size:0.78rem; color:var(--muted); line-height:1.6; margin-bottom:1rem; }
+  .product-footer { display:flex; align-items:center; justify-content:space-between; }
+  .product-price { font-family:'Playfair Display',serif; font-size:1.25rem; color:var(--gold); }
+  .product-price span { font-size:0.75rem; color:var(--muted); font-family:'DM Sans',sans-serif; }
+  .product-add {
+    width:36px; height:36px; border-radius:50%;
+    background:linear-gradient(135deg,var(--burnt-orange),var(--caramel));
+    border:none; color:var(--white); font-size:1.2rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform 0.2s, box-shadow 0.2s;
+  }
+  .product-add:hover { transform:scale(1.15); box-shadow:0 4px 15px rgba(200,107,53,0.5); }
+
+  /* CUSTOMIZER SECTION */
+  #customizer {
+    background: linear-gradient(135deg, #1A0A04 0%, #0D0503 50%, #1A0A04 100%);
+    position:relative; overflow:hidden;
+  }
+  #customizer::before {
+    content:''; position:absolute;
+    width:600px; height:600px; border-radius:50%;
+    background: radial-gradient(circle, rgba(201,168,106,0.06) 0%, transparent 70%);
+    top:-200px; right:-200px; pointer-events:none;
+  }
+  .customizer-grid { display:grid; grid-template-columns:1fr 1fr; gap:4rem; align-items:center; }
+  .customizer-canvas-wrap {
+    position:relative; border-radius:20px; overflow:hidden;
+    background:rgba(0,0,0,0.3); border:1px solid var(--glass-border);
+    aspect-ratio:1; box-shadow:0 30px 80px rgba(0,0,0,0.5);
+  }
+  #cake-canvas { width:100%!important; height:100%!important; }
+  .customizer-panel { }
+  .option-group { margin-bottom:1.8rem; }
+  .option-label { font-family:'Cormorant Garamond',serif; font-size:0.8rem; letter-spacing:0.25em; text-transform:uppercase; color:var(--gold); margin-bottom:0.8rem; display:block; }
+  .option-chips { display:flex; flex-wrap:wrap; gap:0.5rem; }
+  .chip {
+    padding:0.4rem 1rem; border-radius:25px; border:1px solid var(--glass-border);
+    background:transparent; color:var(--warm-beige); font-size:0.76rem;
+    cursor:pointer; transition:all 0.25s; font-family:'DM Sans',sans-serif;
+    letter-spacing:0.05em;
+  }
+  .chip:hover { border-color:var(--gold); color:var(--gold); }
+  .chip.active { background:linear-gradient(135deg,var(--burnt-orange),var(--caramel)); border-color:transparent; color:var(--white); }
+  .color-swatches { display:flex; gap:0.6rem; flex-wrap:wrap; }
+  .swatch {
+    width:28px; height:28px; border-radius:50%; cursor:pointer;
+    border:2px solid transparent; transition:transform 0.2s, border-color 0.2s;
+    position:relative;
+  }
+  .swatch:hover { transform:scale(1.2); }
+  .swatch.active { border-color:var(--cream); box-shadow:0 0 0 2px var(--gold); }
+  .size-slider { width:100%; -webkit-appearance:none; height:3px; border-radius:2px; background:rgba(201,168,106,0.2); outline:none; cursor:pointer; }
+  .size-slider::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--gold); cursor:pointer; }
+  .price-display { font-family:'Playfair Display',serif; font-size:2rem; color:var(--gold); margin:1.5rem 0 0.5rem; }
+  .price-display small { font-size:0.9rem; color:var(--muted); font-family:'DM Sans',sans-serif; }
+  .cust-btn {
+    display:inline-flex; align-items:center; gap:0.6rem;
+    padding:0.9rem 2rem; border-radius:50px; font-size:0.82rem;
+    letter-spacing:0.1em; text-transform:uppercase; cursor:pointer;
+    font-weight:500; transition:all 0.3s; border:none; font-family:'DM Sans',sans-serif;
+  }
+  .cust-btn-primary { background:linear-gradient(135deg,var(--burnt-orange),var(--caramel)); color:var(--white); }
+  .cust-btn-primary:hover { box-shadow:0 8px 25px rgba(200,107,53,0.45); transform:translateY(-2px); }
+  .cust-btn-outline { background:transparent; border:1px solid var(--gold); color:var(--gold); margin-left:0.8rem; }
+  .cust-btn-outline:hover { background:rgba(201,168,106,0.1); }
+
+  /* MENU SECTION */
+  #menu { background: #0D0503; }
+  .menu-tabs { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:2.5rem; }
+  .menu-tab {
+    padding:0.5rem 1.2rem; border-radius:25px; border:1px solid var(--glass-border);
+    background:transparent; color:var(--muted); font-size:0.76rem;
+    cursor:pointer; transition:all 0.25s; font-family:'DM Sans',sans-serif;
+    letter-spacing:0.08em;
+  }
+  .menu-tab:hover { border-color:var(--gold); color:var(--gold); }
+  .menu-tab.active { background:rgba(201,168,106,0.15); border-color:var(--gold); color:var(--gold); }
+  .menu-items { display:none; }
+  .menu-items.active { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1rem; }
+  .menu-item {
+    padding:1.2rem; border-radius:12px; border:1px solid var(--glass-border);
+    background:rgba(255,248,238,0.03); display:flex; align-items:center; gap:1rem;
+    cursor:pointer; transition:all 0.3s;
+  }
+  .menu-item:hover { background:rgba(255,248,238,0.06); border-color:rgba(201,168,106,0.4); transform:translateX(4px); }
+  .menu-item-icon { font-size:1.8rem; min-width:40px; text-align:center; }
+  .menu-item-info { flex:1; }
+  .menu-item-name { font-family:'Playfair Display',serif; font-size:0.95rem; color:var(--cream); margin-bottom:0.2rem; }
+  .menu-item-desc { font-size:0.72rem; color:var(--muted); line-height:1.5; }
+  .menu-item-price { font-family:'Playfair Display',serif; font-size:1rem; color:var(--gold); white-space:nowrap; }
+  .veg-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#4CAF50; margin-right:4px; }
+
+  /* LOCATIONS SECTION */
+  #locations { background:linear-gradient(180deg,#0D0503,var(--dark-choc)); }
+  .locations-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1.2rem; margin-top:1rem; }
+  .location-card {
+    border-radius:16px; border:1px solid var(--glass-border);
+    background:rgba(255,248,238,0.04); padding:1.8rem;
+    cursor:pointer; transition:all 0.35s;
+    position:relative; overflow:hidden;
+  }
+  .location-card::after {
+    content:''; position:absolute; bottom:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,var(--burnt-orange),var(--gold));
+    transform:scaleX(0); transition:transform 0.35s;
+  }
+  .location-card:hover { transform:translateY(-5px); border-color:rgba(201,168,106,0.4); box-shadow:0 15px 40px rgba(0,0,0,0.3); }
+  .location-card:hover::after { transform:scaleX(1); }
+  .location-num { font-family:'Playfair Display',serif; font-size:3rem; color:rgba(201,168,106,0.12); line-height:1; margin-bottom:0.8rem; font-style:italic; }
+  .location-name { font-family:'Playfair Display',serif; font-style:italic; font-size:1.3rem; color:var(--cream); margin-bottom:0.4rem; }
+  .location-addr { font-size:0.75rem; color:var(--muted); line-height:1.6; margin-bottom:1rem; }
+  .location-tag { display:inline-block; padding:0.25rem 0.7rem; border-radius:15px; background:rgba(201,168,106,0.12); font-size:0.65rem; color:var(--gold); letter-spacing:0.1em; text-transform:uppercase; }
+  .location-phone { font-size:0.8rem; color:var(--caramel); margin-top:0.8rem; display:flex; align-items:center; gap:0.4rem; }
+  .flagship-badge { position:absolute; top:12px; right:12px; background:linear-gradient(135deg,var(--burnt-orange),var(--gold)); font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; padding:0.25rem 0.6rem; border-radius:15px; color:var(--white); }
+
+  /* STORY SECTION */
+  #story {
+    background:var(--dark-choc);
+    text-align:center; padding:8rem 4rem;
+  }
+  .story-four {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:2rem;
+    max-width:900px; margin:3rem auto 0;
+  }
+  .story-element {
+    display:flex; flex-direction:column; align-items:center; gap:1rem;
+    padding:2rem 1rem; border-radius:16px; border:1px solid var(--glass-border);
+    background:rgba(255,248,238,0.03); cursor:default;
+    transition:all 0.4s;
+  }
+  .story-element:hover { border-color:var(--gold); background:rgba(201,168,106,0.05); transform:translateY(-5px); }
+  .story-element-icon { font-size:2.5rem; }
+  .story-element-title { font-family:'Playfair Display',serif; font-style:italic; font-size:1rem; color:var(--cream); }
+  .story-element-text { font-size:0.73rem; color:var(--muted); line-height:1.7; text-align:center; }
+
+  /* CART */
+  #cart-btn {
+    position:fixed; bottom:2rem; right:2rem; z-index:200;
+    width:58px; height:58px; border-radius:50%;
+    background:linear-gradient(135deg,var(--burnt-orange),var(--caramel));
+    border:none; cursor:pointer; font-size:1.4rem;
+    box-shadow:0 8px 25px rgba(200,107,53,0.4);
+    transition:transform 0.3s, box-shadow 0.3s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #cart-btn:hover { transform:scale(1.1); box-shadow:0 12px 35px rgba(200,107,53,0.55); }
+  #cart-count {
+    position:absolute; top:-4px; right:-4px;
+    width:22px; height:22px; border-radius:50%;
+    background:var(--cream); color:var(--chocolate);
+    font-size:0.7rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* CART PANEL */
+  #cart-panel {
+    position:fixed; right:-420px; top:0; bottom:0; width:400px; z-index:300;
+    background:linear-gradient(180deg,#1E0D06,#150902);
+    border-left:1px solid var(--glass-border);
+    transition:right 0.45s cubic-bezier(.25,.46,.45,.94);
+    display:flex; flex-direction:column;
+    backdrop-filter:blur(20px);
+    box-shadow:-20px 0 60px rgba(0,0,0,0.5);
+  }
+  #cart-panel.open { right:0; }
+  .cart-header { padding:2rem; border-bottom:1px solid var(--glass-border); display:flex; align-items:center; justify-content:space-between; }
+  .cart-header h3 { font-family:'Playfair Display',serif; font-style:italic; font-size:1.4rem; color:var(--cream); }
+  .cart-close { background:none; border:none; color:var(--muted); font-size:1.4rem; cursor:pointer; transition:color 0.2s; }
+  .cart-close:hover { color:var(--gold); }
+  .cart-items { flex:1; overflow-y:auto; padding:1.5rem; }
+  .cart-item { display:flex; gap:1rem; align-items:center; padding:1rem 0; border-bottom:1px solid rgba(201,168,106,0.1); }
+  .cart-item-icon { font-size:2rem; }
+  .cart-item-info { flex:1; }
+  .cart-item-name { font-family:'Playfair Display',serif; font-size:0.95rem; color:var(--cream); }
+  .cart-item-price { font-size:0.8rem; color:var(--gold); margin-top:2px; }
+  .cart-item-remove { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; transition:color 0.2s; }
+  .cart-item-remove:hover { color:#E53935; }
+  .cart-footer { padding:1.5rem; border-top:1px solid var(--glass-border); }
+  .cart-total { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem; }
+  .cart-total-label { font-size:0.8rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); }
+  .cart-total-price { font-family:'Playfair Display',serif; font-size:1.5rem; color:var(--gold); }
+  .cart-checkout-btn {
+    width:100%; padding:1rem; border-radius:50px;
+    background:linear-gradient(135deg,var(--burnt-orange),var(--caramel));
+    border:none; color:var(--white); font-size:0.82rem;
+    letter-spacing:0.1em; text-transform:uppercase; cursor:pointer;
+    font-weight:500; font-family:'DM Sans',sans-serif;
+    transition:box-shadow 0.3s, transform 0.2s;
+  }
+  .cart-checkout-btn:hover { box-shadow:0 8px 25px rgba(200,107,53,0.45); transform:translateY(-2px); }
+
+  /* TOAST */
+  .toast {
+    position:fixed; bottom:5rem; right:2rem; z-index:500;
+    background:rgba(26,9,3,0.95); border:1px solid var(--gold);
+    border-radius:12px; padding:1rem 1.5rem;
+    display:flex; align-items:center; gap:0.8rem;
+    transform:translateX(200%); transition:transform 0.4s;
+    backdrop-filter:blur(15px);
+    box-shadow:0 8px 25px rgba(0,0,0,0.4);
+    max-width:280px;
+  }
+  .toast.show { transform:translateX(0); }
+  .toast-icon { font-size:1.3rem; }
+  .toast-text { font-size:0.82rem; color:var(--cream); }
+
+  /* FOOTER */
+  footer {
+    background:#080302; padding:4rem; text-align:center;
+    border-top:1px solid var(--glass-border); position:relative; z-index:10;
+  }
+  .footer-logo { font-family:'Playfair Display',serif; font-style:italic; font-size:2rem; color:var(--gold); margin-bottom:0.5rem; }
+  .footer-tagline { font-family:'Cormorant Garamond',serif; font-size:0.85rem; letter-spacing:0.3em; color:var(--muted); text-transform:uppercase; margin-bottom:2rem; }
+  .footer-links { display:flex; justify-content:center; gap:2rem; flex-wrap:wrap; margin-bottom:2rem; }
+  .footer-links a { color:var(--muted); text-decoration:none; font-size:0.78rem; letter-spacing:0.1em; transition:color 0.3s; }
+  .footer-links a:hover { color:var(--gold); }
+  .footer-copy { font-size:0.7rem; color:rgba(160,128,96,0.4); letter-spacing:0.1em; }
+  .footer-delivery { display:flex; justify-content:center; gap:1.2rem; margin-bottom:2rem; flex-wrap:wrap; }
+  .delivery-badge { padding:0.4rem 1rem; border-radius:20px; border:1px solid var(--glass-border); font-size:0.72rem; color:var(--muted); letter-spacing:0.1em; }
+
+  /* AMBIENT PARTICLES */
+  #particles { position:fixed; inset:0; z-index:2; pointer-events:none; overflow:hidden; }
+  .particle {
+    position:absolute; border-radius:50%;
+    background:radial-gradient(circle,rgba(201,168,106,0.3),transparent);
+    animation:floatParticle linear infinite;
+    opacity:0;
+  }
+  @keyframes floatParticle { 0%{transform:translateY(100vh) scale(0);opacity:0} 10%{opacity:1} 90%{opacity:0.5} 100%{transform:translateY(-10vh) scale(1);opacity:0} }
+
+  /* SCROLL REVEAL */
+  .reveal { opacity:0; transform:translateY(40px); transition:opacity 0.8s ease, transform 0.8s ease; }
+  .reveal.visible { opacity:1; transform:translateY(0); }
+
+  /* RESPONSIVE */
+  @media(max-width:900px) {
+    nav { padding:1rem 1.5rem; }
+    .nav-links { display:none; }
+    section { padding:5rem 1.5rem; }
+    .customizer-grid { grid-template-columns:1fr; }
+    .story-four { grid-template-columns:repeat(2,1fr); }
+    #cart-panel { width:100%; }
+  }
+  @media(max-width:600px) {
+    .hero-ingredients { gap:0.8rem; }
+    .ingredient-badge { min-width:80px; padding:0.7rem 0.8rem; }
+    .story-four { grid-template-columns:1fr 1fr; }
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width:5px; }
+  ::-webkit-scrollbar-track { background:var(--dark-choc); }
+  ::-webkit-scrollbar-thumb { background:var(--soft-brown); border-radius:3px; }
+
+  /* ── REAL PHOTO GALLERY / PARALLAX HERO ── */
+  #gallery-parallax {
+    position:relative; height:85vh; overflow:hidden;
+    background: var(--dark-choc);
+  }
+  .parallax-bg {
+    position:absolute; inset:-15%; width:130%; height:130%;
+    background-image: url('https://lh3.googleusercontent.com/p/AF1QipN3_BIhKb1Kp4pIoA3BTG4hqc_5RKqYZM6wF8H4=s1360-w1360-h1020');
+    background-size:cover; background-position:center;
+    will-change:transform; transform:translateY(0px);
+    filter:brightness(0.45) saturate(1.2);
+  }
+  .parallax-overlay {
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(26,9,3,0.3) 0%, rgba(42,22,9,0.7) 60%, var(--dark-choc) 100%);
+  }
+  .parallax-content {
+    position:relative; z-index:5; height:100%;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    padding: 2rem;
+  }
+  .parallax-label {
+    font-family:'Cormorant Garamond',serif; font-style:italic;
+    font-size:1rem; letter-spacing:0.4em; text-transform:uppercase;
+    color:var(--gold); margin-bottom:1rem;
+    opacity:0; transform:translateY(25px);
+    transition:opacity 0.8s ease, transform 0.8s ease;
+  }
+  .parallax-title {
+    font-family:'Playfair Display',serif; font-style:italic;
+    font-size:clamp(3rem,7vw,6rem); color:var(--cream); line-height:1.1;
+    opacity:0; transform:translateY(30px);
+    transition:opacity 0.9s ease 0.15s, transform 0.9s ease 0.15s;
+    text-shadow:0 4px 40px rgba(0,0,0,0.6);
+  }
+  .parallax-title em { color:var(--gold); font-style:normal; }
+  .parallax-sub {
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(1rem,2vw,1.25rem); color:var(--sand);
+    max-width:480px; line-height:1.8; margin-top:1.2rem; font-weight:300;
+    opacity:0; transform:translateY(25px);
+    transition:opacity 1s ease 0.3s, transform 1s ease 0.3s;
+  }
+  #gallery-parallax.revealed .parallax-label,
+  #gallery-parallax.revealed .parallax-title,
+  #gallery-parallax.revealed .parallax-sub { opacity:1; transform:translateY(0); }
+
+  /* ── REAL IMAGES MOSAIC ── */
+  #real-photos {
+    background: linear-gradient(180deg, var(--dark-choc) 0%, #1A0A04 100%);
+    padding:7rem 4rem;
+    overflow:hidden;
+  }
+  .photos-mosaic {
+    display:grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: 280px 280px;
+    gap:12px;
+    margin-top:3rem;
+    border-radius:20px;
+    overflow:hidden;
+  }
+  .mosaic-item {
+    position:relative; overflow:hidden; cursor:pointer;
+    background:var(--dark-choc);
+  }
+  .mosaic-item:first-child { grid-row: 1 / 3; }
+  .mosaic-img {
+    width:100%; height:100%; object-fit:cover;
+    transition:transform 0.7s cubic-bezier(.25,.46,.45,.94), filter 0.5s;
+    filter:brightness(0.85) saturate(1.1);
+    display:block;
+  }
+  .mosaic-item:hover .mosaic-img { transform:scale(1.07); filter:brightness(1) saturate(1.2); }
+  .mosaic-overlay {
+    position:absolute; inset:0;
+    background:linear-gradient(0deg, rgba(26,9,3,0.85) 0%, transparent 60%);
+    opacity:0; transition:opacity 0.4s;
+    display:flex; align-items:flex-end; padding:1.2rem;
+  }
+  .mosaic-item:hover .mosaic-overlay { opacity:1; }
+  .mosaic-caption {
+    font-family:'Playfair Display',serif; font-style:italic;
+    font-size:0.95rem; color:var(--cream);
+  }
+  /* Photo reveal stagger */
+  .mosaic-item { opacity:0; transform:scale(0.95); transition:opacity 0.7s ease, transform 0.7s ease; }
+  .mosaic-item.visible { opacity:1; transform:scale(1); }
+  .mosaic-item:nth-child(1) { transition-delay:0s; }
+  .mosaic-item:nth-child(2) { transition-delay:0.1s; }
+  .mosaic-item:nth-child(3) { transition-delay:0.2s; }
+  .mosaic-item:nth-child(4) { transition-delay:0.3s; }
+  .mosaic-item:nth-child(5) { transition-delay:0.4s; }
+
+  /* ── INTERACTIVE CAROUSEL ── */
+  #carousel-section {
+    background:#0D0503;
+    padding:7rem 0;
+    overflow:hidden;
+  }
+  .carousel-header { padding:0 4rem; margin-bottom:3rem; }
+  .carousel-track-wrap {
+    position:relative; overflow:hidden;
+    padding:1.5rem 0;
+  }
+  .carousel-track {
+    display:flex; gap:1.5rem;
+    padding:0 4rem;
+    transition:transform 0.6s cubic-bezier(.25,.46,.45,.94);
+    will-change:transform;
+  }
+  .carousel-card {
+    flex:0 0 320px; border-radius:20px; overflow:hidden;
+    position:relative; cursor:pointer;
+    box-shadow:0 10px 40px rgba(0,0,0,0.5);
+    transition:transform 0.4s, box-shadow 0.4s;
+  }
+  .carousel-card:hover { transform:translateY(-10px) scale(1.02); box-shadow:0 25px 60px rgba(0,0,0,0.7),0 0 30px rgba(201,168,106,0.15); }
+  .carousel-card-img {
+    width:100%; height:240px; object-fit:cover;
+    display:block; transition:transform 0.6s;
+  }
+  .carousel-card:hover .carousel-card-img { transform:scale(1.08); }
+  .carousel-card-body {
+    padding:1.4rem 1.6rem 1.6rem;
+    background:linear-gradient(180deg,#1A0A04,#0D0503);
+    border:1px solid var(--glass-border); border-top:none;
+  }
+  .carousel-card-tag { font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--burnt-orange); margin-bottom:0.4rem; }
+  .carousel-card-name { font-family:'Playfair Display',serif; font-style:italic; font-size:1.1rem; color:var(--cream); margin-bottom:0.3rem; }
+  .carousel-card-desc { font-size:0.76rem; color:var(--muted); line-height:1.6; }
+  .carousel-card-price { font-family:'Playfair Display',serif; font-size:1.15rem; color:var(--gold); margin-top:0.7rem; }
+  .carousel-nav {
+    display:flex; gap:1rem; justify-content:center;
+    margin-top:2.5rem; padding:0 4rem;
+  }
+  .carousel-btn {
+    width:48px; height:48px; border-radius:50%;
+    border:1px solid var(--glass-border); background:rgba(255,248,238,0.05);
+    color:var(--cream); font-size:1.1rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:all 0.3s; backdrop-filter:blur(8px);
+  }
+  .carousel-btn:hover { border-color:var(--gold); color:var(--gold); background:rgba(201,168,106,0.1); }
+  .carousel-dots { display:flex; gap:0.5rem; align-items:center; margin:0 1rem; }
+  .carousel-dot {
+    width:6px; height:6px; border-radius:50%;
+    background:rgba(201,168,106,0.3); cursor:pointer;
+    transition:all 0.3s;
+  }
+  .carousel-dot.active { width:20px; border-radius:3px; background:var(--gold); }
+
+  /* ── PARALLAX STRIP ── */
+  .parallax-strip {
+    position:relative; height:420px; overflow:hidden;
+  }
+  .parallax-strip-bg {
+    position:absolute; inset:-20%; width:140%; height:140%;
+    background-size:cover; background-position:center;
+    will-change:transform;
+    filter:brightness(0.4) saturate(1.3);
+  }
+  .parallax-strip-overlay {
+    position:absolute; inset:0;
+    background:linear-gradient(90deg, rgba(26,9,3,0.85) 0%, rgba(26,9,3,0.3) 50%, rgba(26,9,3,0.85) 100%);
+  }
+  .parallax-strip-content {
+    position:relative; z-index:5; height:100%;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; text-align:center; padding:2rem;
+    gap:1rem;
+  }
+  .strip-quote {
+    font-family:'Playfair Display',serif; font-style:italic;
+    font-size:clamp(1.5rem,3.5vw,2.8rem); color:var(--cream);
+    max-width:700px; line-height:1.4;
+  }
+  .strip-quote em { color:var(--gold); font-style:normal; }
+  .strip-author { font-family:'Cormorant Garamond',serif; font-size:0.9rem; letter-spacing:0.3em; text-transform:uppercase; color:var(--muted); }
+
+  /* ── SCROLL TICKER ── */
+  .ticker-wrap {
+    background:linear-gradient(135deg,var(--burnt-orange),var(--caramel));
+    padding:0.9rem 0; overflow:hidden; position:relative; z-index:10;
+  }
+  .ticker-track {
+    display:flex; gap:3rem;
+    animation:tickerScroll 25s linear infinite;
+    white-space:nowrap;
+  }
+  .ticker-item {
+    font-family:'Cormorant Garamond',serif; font-style:italic;
+    font-size:1rem; color:rgba(255,255,255,0.9); letter-spacing:0.08em;
+    display:flex; align-items:center; gap:1rem; flex-shrink:0;
+  }
+  .ticker-sep { color:rgba(255,255,255,0.4); font-style:normal; }
+  @keyframes tickerScroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+
+  /* ── SOCIAL MEDIA SECTION ── */
+  #social-section {
+    background: linear-gradient(180deg,#080302,#0D0503);
+    padding:7rem 4rem;
+    text-align:center;
+    border-top:1px solid var(--glass-border);
+    position:relative; z-index:10;
+  }
+  #social-section::before {
+    content:''; position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width:1px; height:80px; background:linear-gradient(180deg,var(--gold),transparent);
+  }
+  .social-grid {
+    display:flex; gap:1.2rem; justify-content:center; flex-wrap:wrap;
+    margin-top:3rem;
+  }
+  .social-card {
+    display:flex; flex-direction:column; align-items:center; gap:0.7rem;
+    padding:2rem 2.4rem; border-radius:20px;
+    border:1px solid var(--glass-border); background:rgba(255,248,238,0.03);
+    text-decoration:none; cursor:pointer;
+    transition:all 0.4s cubic-bezier(.25,.46,.45,.94);
+    min-width:140px; position:relative; overflow:hidden;
+  }
+  .social-card::before {
+    content:''; position:absolute; inset:0; border-radius:20px;
+    opacity:0; transition:opacity 0.4s;
+  }
+  .social-card:hover { transform:translateY(-8px); }
+  .social-card:hover::before { opacity:1; }
+  /* Platform-specific glows */
+  .social-ig::before { background:linear-gradient(135deg,rgba(225,48,108,0.12),rgba(193,53,132,0.08),rgba(88,81,216,0.08)); }
+  .social-ig:hover { border-color:rgba(225,48,108,0.5); box-shadow:0 15px 40px rgba(225,48,108,0.2); }
+  .social-fb::before { background:linear-gradient(135deg,rgba(24,119,242,0.12),rgba(24,119,242,0.06)); }
+  .social-fb:hover { border-color:rgba(24,119,242,0.5); box-shadow:0 15px 40px rgba(24,119,242,0.2); }
+  .social-yt::before { background:linear-gradient(135deg,rgba(255,0,0,0.12),rgba(255,0,0,0.06)); }
+  .social-yt:hover { border-color:rgba(255,0,0,0.4); box-shadow:0 15px 40px rgba(255,0,0,0.15); }
+  .social-sw::before { background:linear-gradient(135deg,rgba(252,88,0,0.12),rgba(252,88,0,0.06)); }
+  .social-sw:hover { border-color:rgba(252,88,0,0.5); box-shadow:0 15px 40px rgba(252,88,0,0.2); }
+  .social-zom::before { background:linear-gradient(135deg,rgba(203,32,45,0.12),rgba(203,32,45,0.06)); }
+  .social-zom:hover { border-color:rgba(203,32,45,0.4); box-shadow:0 15px 40px rgba(203,32,45,0.15); }
+  .social-mp::before { background:linear-gradient(135deg,rgba(201,168,106,0.12),rgba(201,168,106,0.06)); }
+  .social-mp:hover { border-color:rgba(201,168,106,0.5); box-shadow:0 15px 40px rgba(201,168,106,0.2); }
+  .social-icon {
+    font-size:2rem; position:relative; z-index:1;
+    transition:transform 0.3s;
+  }
+  .social-card:hover .social-icon { transform:scale(1.2) rotate(-5deg); }
+  .social-platform { font-size:0.7rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); position:relative; z-index:1; }
+  .social-handle { font-family:'Playfair Display',serif; font-style:italic; font-size:0.9rem; color:var(--cream); position:relative; z-index:1; }
+  .social-followers { font-size:0.65rem; color:var(--gold); letter-spacing:0.1em; position:relative; z-index:1; margin-top:0.2rem; }
+  .social-connect-text {
+    font-family:'Cormorant Garamond',serif; font-style:italic;
+    font-size:1.2rem; color:var(--muted); margin-top:0.8rem; line-height:1.7;
+    max-width:450px; margin-left:auto; margin-right:auto;
+  }
+
+  /* ── ANIMATED COUNTER STRIP ── */
+  .stats-strip {
+    background:linear-gradient(135deg,rgba(201,168,106,0.08),rgba(200,107,53,0.06));
+    border-top:1px solid var(--glass-border);
+    border-bottom:1px solid var(--glass-border);
+    padding:3rem 4rem;
+    display:grid; grid-template-columns:repeat(4,1fr); gap:2rem;
+    text-align:center; position:relative; z-index:10;
+  }
+  .stat-item { display:flex; flex-direction:column; align-items:center; gap:0.4rem; }
+  .stat-num { font-family:'Playfair Display',serif; font-size:clamp(2rem,4vw,3rem); color:var(--gold); line-height:1; }
+  .stat-label { font-size:0.7rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); }
+
+  /* INTERACTIVE MAP */
+  .map-visual {
+    border-radius:16px; border:1px solid var(--glass-border);
+    background: radial-gradient(ellipse at center, #1A0A04 0%, #080302 100%);
+    padding:2rem; margin-top:2rem; position:relative;
+    overflow:hidden; height:280px;
+  }
+  .map-dot {
+    position:absolute; width:12px; height:12px; border-radius:50%;
+    background:var(--gold); cursor:pointer;
+    animation:mapPulse 2s ease-in-out infinite;
+    transform:translate(-50%,-50%);
+  }
+  .map-dot::before { content:''; position:absolute; inset:-6px; border-radius:50%; border:1px solid rgba(201,168,106,0.4); animation:mapRing 2s ease-in-out infinite; }
+  .map-dot-label {
+    position:absolute; top:-24px; left:50%; transform:translateX(-50%);
+    white-space:nowrap; font-size:0.65rem; color:var(--gold); letter-spacing:0.05em;
+    background:rgba(26,9,3,0.8); padding:2px 6px; border-radius:4px;
+  }
+  @keyframes mapPulse { 0%,100%{box-shadow:0 0 0 0 rgba(201,168,106,0.5)} 50%{box-shadow:0 0 0 8px rgba(201,168,106,0)} }
+  @keyframes mapRing { 0%{transform:scale(1);opacity:0.5} 100%{transform:scale(2.5);opacity:0} }
+  .map-line {
+    position:absolute; background:rgba(201,168,106,0.15);
+    height:1px; transform-origin:left center;
+  }
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- PARTICLES -->
+<div id="particles"></div>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">Elementaria</div>
+  <div class="loader-sub">Bakery Cafe · Mumbai</div>
+  <div class="loader-bar-wrap"><div class="loader-bar" id="loaderBar"></div></div>
+  <div class="loader-pct" id="loaderPct">0%</div>
+</div>
+
+<!-- THREE.JS CANVAS -->
+<canvas id="three-canvas"></canvas>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Elementaria<span>Bakery Cafe · Mumbai</span></div>
+  <div class="nav-links">
+    <a href="#products">Pastries</a>
+    <a href="#menu">Menu</a>
+    <a href="#customizer">Customize</a>
+    <a href="#locations">Locations</a>
+    <a href="#story">Our Story</a>
+    <a href="#" class="nav-cta" onclick="toggleCart(event)">Order Now</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div id="hero">
+  <div class="hero-eyebrow">Mumbai's Finest · Est. Since The Beginning</div>
+  <h1 class="hero-title">Where <em>Nature</em><br>Meets Craft</h1>
+  <p class="hero-sub">Four essential gifts of nature—winter wheat, single-origin Arabica, Belgian cocoa, and crisp water—united in every creation.</p>
+  <div class="hero-ingredients">
+    <div class="ingredient-badge" onclick="highlightIngredient('wheat')">
+      <div class="ingredient-icon">🌾</div>
+      <div class="ingredient-name">Winter Wheat</div>
+      <div class="ingredient-desc">Soft, premium milled flour</div>
+    </div>
+    <div class="ingredient-badge" onclick="highlightIngredient('coffee')">
+      <div class="ingredient-icon">☕</div>
+      <div class="ingredient-name">AAA Arabica</div>
+      <div class="ingredient-desc">Single-origin perfection</div>
+    </div>
+    <div class="ingredient-badge" onclick="highlightIngredient('cocoa')">
+      <div class="ingredient-icon">🍫</div>
+      <div class="ingredient-name">Belgian Cocoa</div>
+      <div class="ingredient-desc">Finest cocoa pods, Belgian craft</div>
+    </div>
+    <div class="ingredient-badge" onclick="highlightIngredient('water')">
+      <div class="ingredient-icon">💧</div>
+      <div class="ingredient-name">Crisp Water</div>
+      <div class="ingredient-desc">Purified mountain clarity</div>
+    </div>
+  </div>
+  <div class="hero-scroll">
+    <div class="scroll-line"></div>
+    <span>Explore</span>
+  </div>
+</div>
+
+<!-- SECTIONS -->
+<div class="sections-wrapper">
+
+<!-- REAL PHOTO GALLERY PARALLAX -->
+<section id="gallery-parallax">
+  <div class="parallax-bg" id="parallaxBg1"></div>
+  <div class="parallax-overlay"></div>
+  <div class="parallax-content">
+    <div class="parallax-label">Inside Elementaria</div>
+    <h2 class="parallax-title">A Space Where <em>Craft</em><br>Comes Alive</h2>
+    <p class="parallax-sub">Step into our cafes across Mumbai — where every corner tells a story of flavor, warmth, and artisanal pride.</p>
+  </div>
+</section>
+
+<!-- STATS STRIP -->
+<div class="stats-strip reveal">
+  <div class="stat-item"><div class="stat-num" data-target="5">0</div><div class="stat-label">Mumbai Locations</div></div>
+  <div class="stat-item"><div class="stat-num" data-target="50">0</div><div class="stat-label">Menu Items</div></div>
+  <div class="stat-item"><div class="stat-num" data-target="19">0</div><div class="stat-label">K Instagram Followers</div></div>
+  <div class="stat-item"><div class="stat-num" data-target="4">0</div><div class="stat-label">Elements of Nature</div></div>
+</div>
+
+<!-- SCROLLING TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-track" id="tickerTrack">
+    <div class="ticker-item">🍫 Tub Cakes <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">☕ Single Origin Arabica <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">🥐 Fresh Croissants Daily <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">🎂 Custom Cake Orders <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">🍕 Italian Specials <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">🥤 Signature Shakes <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">🛵 Delivery on Swiggy & Magicpin <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">🍫 Tub Cakes <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">☕ Single Origin Arabica <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">🥐 Fresh Croissants Daily <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">🎂 Custom Cake Orders <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">🍕 Italian Specials <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">🥤 Signature Shakes <span class="ticker-sep">✦</span></div>
+    <div class="ticker-item">🛵 Delivery on Swiggy & Magicpin <span class="ticker-sep">✦</span></div>
+  </div>
+</div>
+
+<!-- REAL PHOTOS MOSAIC -->
+<section id="real-photos">
+  <div style="max-width:800px;" class="reveal">
+    <span class="section-label">Gallery</span>
+    <h2 class="section-title">The Elementaria<br>Experience</h2>
+    <div class="section-divider"></div>
+    <p style="color:var(--muted);font-size:0.9rem;line-height:1.8;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.05rem;">
+      From our flagship BKC outlet to the breezy Juhu cafe — each Elementaria location carries the same warmth, craft, and love for exceptional baking.
+    </p>
+  </div>
+  <div class="photos-mosaic" id="photosMosaic">
+    <div class="mosaic-item" style="border-radius:16px 0 0 16px;">
+      <img class="mosaic-img" src="https://lh3.googleusercontent.com/p/AF1QipN3_BIhKb1Kp4pIoA3BTG4hqc_5RKqYZM6wF8H4=s1360-w1360-h1020" alt="Elementaria Bakery Cafe Interior" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&q=80'">
+      <div class="mosaic-overlay"><span class="mosaic-caption">Our Signature Atmosphere</span></div>
+    </div>
+    <div class="mosaic-item">
+      <img class="mosaic-img" src="https://lh3.googleusercontent.com/p/AF1QipMPq-F6y0Y3NQqzl5S0Z9YhZPVBhVkSijEPXzIY=s1360-w1360-h1020" alt="Elementaria Tub Cake" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&q=80'">
+      <div class="mosaic-overlay"><span class="mosaic-caption">Famous Tub Cakes</span></div>
+    </div>
+    <div class="mosaic-item" style="border-radius:0 16px 0 0;">
+      <img class="mosaic-img" src="https://lh3.googleusercontent.com/p/AF1QipMqtFW0TmVHijdJiMD02JFcGvq9A1jCiHMw6P4=s1360-w1360-h1020" alt="Elementaria Coffee" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80'">
+      <div class="mosaic-overlay"><span class="mosaic-caption">Artisan Coffee</span></div>
+    </div>
+    <div class="mosaic-item">
+      <img class="mosaic-img" src="https://lh3.googleusercontent.com/p/AF1QipNGsXDdN8JcL7R5hMp_kiwvKuCsEZG5GrF8_9E=s1360-w1360-h1020" alt="Elementaria Pastries" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80'">
+      <div class="mosaic-overlay"><span class="mosaic-caption">Fresh Pastries</span></div>
+    </div>
+    <div class="mosaic-item" style="border-radius:0 0 16px 0;">
+      <img class="mosaic-img" src="https://lh3.googleusercontent.com/p/AF1QipOhd7R0kqM6jTPbpKosPfxxWBkEHH0f8Y-0RLIQ=s1360-w1360-h1020" alt="Elementaria Shakes" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&q=80'">
+      <div class="mosaic-overlay"><span class="mosaic-caption">Signature Shakes</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- PARALLAX QUOTE STRIP -->
+<div class="parallax-strip">
+  <div class="parallax-strip-bg" id="parallaxBg2" style="background-image:url('https://lh3.googleusercontent.com/p/AF1QipMPq-F6y0Y3NQqzl5S0Z9YhZPVBhVkSijEPXzIY=s1360-w1360-h1020');"></div>
+  <div class="parallax-strip-overlay"></div>
+  <div class="parallax-strip-content">
+    <p class="strip-quote">"Every bite is a <em>testament</em> to the four gifts of nature"</p>
+    <span class="strip-author">— Elementaria, Mumbai's Finest</span>
+  </div>
+</div>
+
+<!-- INTERACTIVE CAROUSEL -->
+<section id="carousel-section">
+  <div class="carousel-header reveal">
+    <span class="section-label">Swipe Through</span>
+    <h2 class="section-title">Our Most Loved<br>Creations</h2>
+    <div class="section-divider"></div>
+  </div>
+  <div class="carousel-track-wrap">
+    <div class="carousel-track" id="carouselTrack">
+      <div class="carousel-card reveal" style="transition-delay:0s">
+        <img class="carousel-card-img" src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=640&q=85" alt="Chocolate Tub Cake" loading="lazy">
+        <div class="carousel-card-body">
+          <div class="carousel-card-tag">🏆 Bestseller</div>
+          <div class="carousel-card-name">Intense Chocolate Tub Cake</div>
+          <div class="carousel-card-desc">55% dark Belgian chocolate, rich cocoa ganache, moist crumb layers</div>
+          <div class="carousel-card-price">₹275</div>
+        </div>
+      </div>
+      <div class="carousel-card reveal" style="transition-delay:0.1s">
+        <img class="carousel-card-img" src="https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=640&q=85" alt="Red Velvet Cake" loading="lazy">
+        <div class="carousel-card-body">
+          <div class="carousel-card-tag">⭐ Signature</div>
+          <div class="carousel-card-name">Red Velvet Hazelnut Tub Cake</div>
+          <div class="carousel-card-desc">Vibrant red velvet layers, cream cheese frosting, hazelnut crunch</div>
+          <div class="carousel-card-price">₹313</div>
+        </div>
+      </div>
+      <div class="carousel-card reveal" style="transition-delay:0.2s">
+        <img class="carousel-card-img" src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=640&q=85" alt="Arabica Coffee" loading="lazy">
+        <div class="carousel-card-body">
+          <div class="carousel-card-tag">☕ Coffee</div>
+          <div class="carousel-card-name">Single Origin Espresso</div>
+          <div class="carousel-card-desc">AAA-grade Arabica, pure & intense — roasted in-house daily</div>
+          <div class="carousel-card-price">₹180</div>
+        </div>
+      </div>
+      <div class="carousel-card reveal" style="transition-delay:0.3s">
+        <img class="carousel-card-img" src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=640&q=85" alt="Fresh Croissant" loading="lazy">
+        <div class="carousel-card-body">
+          <div class="carousel-card-tag">🥐 Fresh Daily</div>
+          <div class="carousel-card-name">Butter Croissant</div>
+          <div class="carousel-card-desc">Golden-brown flaky layers, pure European butter, baked fresh every morning</div>
+          <div class="carousel-card-price">₹138</div>
+        </div>
+      </div>
+      <div class="carousel-card reveal" style="transition-delay:0.4s">
+        <img class="carousel-card-img" src="https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=640&q=85" alt="Oreo Shake" loading="lazy">
+        <div class="carousel-card-body">
+          <div class="carousel-card-tag">🥤 Popular</div>
+          <div class="carousel-card-name">Oreo Shake</div>
+          <div class="carousel-card-desc">Crushed Oreo & vanilla ice cream — thick, creamy and indulgent</div>
+          <div class="carousel-card-price">₹259</div>
+        </div>
+      </div>
+      <div class="carousel-card reveal" style="transition-delay:0.5s">
+        <img class="carousel-card-img" src="https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=640&q=85" alt="Nutella Tub Cake" loading="lazy">
+        <div class="carousel-card-body">
+          <div class="carousel-card-tag">🌰 Fan Favorite</div>
+          <div class="carousel-card-name">Nutella Tub Cake</div>
+          <div class="carousel-card-desc">Velvety Nutella frosting, crushed hazelnut toppings, dreamy layers</div>
+          <div class="carousel-card-price">₹280</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="carousel-nav">
+    <button class="carousel-btn" id="carouselPrev" onclick="carouselMove(-1)">←</button>
+    <div class="carousel-dots" id="carouselDots"></div>
+    <button class="carousel-btn" id="carouselNext" onclick="carouselMove(1)">→</button>
+  </div>
+</section>
+
+  <!-- STORY -->
+  <section id="story">
+    <div style="max-width:700px;margin:0 auto;text-align:center;" class="reveal">
+      <span class="section-label">Our Philosophy</span>
+      <h2 class="section-title">Crafted by Nature,<br>Perfected by Passion</h2>
+      <div class="section-divider" style="margin:0 auto 2rem;"></div>
+      <p style="color:var(--muted);line-height:1.9;font-size:0.9rem;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.1rem;">
+        At Elementaria, we believe the finest baked creations begin with four essential gifts nature bestowed upon mankind. Each loaf, each cake, each cup of coffee carries the soul of these extraordinary ingredients.
+      </p>
+    </div>
+    <div class="story-four reveal">
+      <div class="story-element">
+        <div class="story-element-icon">🌾</div>
+        <div class="story-element-title">Soft Winter Wheat</div>
+        <div class="story-element-text">Premium flour milled from heritage winter wheat varieties, giving our pastries an unmatched tenderness.</div>
+      </div>
+      <div class="story-element">
+        <div class="story-element-icon">☕</div>
+        <div class="story-element-title">AAA Arabica Beans</div>
+        <div class="story-element-text">Single-origin, top-grade Arabica beans sourced from the finest estates, roasted to perfection in-house.</div>
+      </div>
+      <div class="story-element">
+        <div class="story-element-icon">🍫</div>
+        <div class="story-element-title">Belgian Cocoa</div>
+        <div class="story-element-text">Hand-selected Belgian cocoa pods delivering complex chocolatey depths that define our signature cakes.</div>
+      </div>
+      <div class="story-element">
+        <div class="story-element-icon">💧</div>
+        <div class="story-element-title">Crisp Pure Water</div>
+        <div class="story-element-text">Ultra-purified water that lets every flavour speak for itself, the invisible backbone of great baking.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section id="products">
+    <span class="section-label reveal">Signature Creations</span>
+    <h2 class="section-title reveal">Our Famous<br>Tub Cakes & Pastries</h2>
+    <div class="section-divider reveal"></div>
+    <div class="products-grid" id="productsGrid"></div>
+  </section>
+
+  <!-- MENU -->
+  <section id="menu">
+    <span class="section-label reveal">Full Menu</span>
+    <h2 class="section-title reveal">Everything We Craft</h2>
+    <div class="section-divider reveal"></div>
+    <div class="menu-tabs" id="menuTabs"></div>
+    <div id="menuContent"></div>
+  </section>
+
+  <!-- CUSTOMIZER -->
+  <section id="customizer">
+    <div class="customizer-grid">
+      <div class="customizer-canvas-wrap reveal">
+        <canvas id="cake-canvas"></canvas>
+      </div>
+      <div class="customizer-panel reveal">
+        <span class="section-label">Design Studio</span>
+        <h2 class="section-title" style="font-size:clamp(1.8rem,3vw,2.8rem);">Build Your<br>Dream Cake</h2>
+        <div class="section-divider"></div>
+
+        <div class="option-group">
+          <span class="option-label">Base Flavour</span>
+          <div class="option-chips" id="flavourChips"></div>
+        </div>
+        <div class="option-group">
+          <span class="option-label">Frosting Colour</span>
+          <div class="color-swatches" id="colorSwatches"></div>
+        </div>
+        <div class="option-group">
+          <span class="option-label">Toppings</span>
+          <div class="option-chips" id="toppingChips"></div>
+        </div>
+        <div class="option-group">
+          <span class="option-label">Size (inches)</span>
+          <input type="range" class="size-slider" id="sizeSlider" min="4" max="12" value="6" oninput="updateCakeSize(this.value)">
+          <div style="display:flex;justify-content:space-between;margin-top:0.4rem;">
+            <span style="font-size:0.7rem;color:var(--muted);">4″ Petite</span>
+            <span style="font-size:0.7rem;color:var(--gold);" id="sizeLabel">6″</span>
+            <span style="font-size:0.7rem;color:var(--muted);">12″ Grand</span>
+          </div>
+        </div>
+        <div class="price-display">₹<span id="cakePrice">299</span> <small>estimated</small></div>
+        <div>
+          <button class="cust-btn cust-btn-primary" onclick="addCustomCake()">🛒 Add to Cart</button>
+          <button class="cust-btn cust-btn-outline" onclick="saveCakeDesign()">💾 Save Design</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOCATIONS -->
+  <section id="locations">
+    <span class="section-label reveal">Find Us</span>
+    <h2 class="section-title reveal">Five Locations<br>Across Mumbai</h2>
+    <div class="section-divider reveal"></div>
+    <div class="locations-grid" id="locationsGrid"></div>
+
+    <div class="map-visual reveal" id="mapVisual">
+      <!-- Mumbai location dots will be injected by JS -->
+    </div>
+
+    <p style="text-align:center;margin-top:1.5rem;font-size:0.78rem;color:var(--muted);letter-spacing:0.1em;" class="reveal">
+      📞 +91 97022 88999 &nbsp;·&nbsp; All locations open daily &nbsp;·&nbsp; Delivery via Swiggy & Magicpin
+    </p>
+  </section>
+
+</div><!-- end sections-wrapper -->
+
+<!-- SECOND PARALLAX STRIP (Cafe ambiance) -->
+<div class="parallax-strip" style="height:320px;">
+  <div class="parallax-strip-bg" id="parallaxBg3" style="background-image:url('https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=1600&q=80');"></div>
+  <div class="parallax-strip-overlay"></div>
+  <div class="parallax-strip-content">
+    <p class="strip-quote" style="font-size:clamp(1.2rem,2.5vw,2rem);">BKC · Chembur · Juhu · Lower Parel · <em>Powai</em></p>
+    <span class="strip-author">Five Locations Across Mumbai · Open Daily</span>
+  </div>
+</div>
+
+<!-- SOCIAL MEDIA SECTION -->
+<section id="social-section">
+  <span class="section-label reveal">Stay Connected</span>
+  <h2 class="section-title reveal" style="font-size:clamp(2rem,4vw,3rem);">Follow Our<br><em>Sweet Journey</em></h2>
+  <div class="section-divider reveal" style="margin:0 auto 1.5rem;"></div>
+  <p class="social-connect-text reveal">
+    Tag us in your moments, follow our daily specials, and be part of the Elementaria community across all platforms.
+  </p>
+  <div class="social-grid reveal">
+    <a href="https://www.instagram.com/elementariabakerycafe/" target="_blank" class="social-card social-ig">
+      <div class="social-icon">📸</div>
+      <div class="social-platform">Instagram</div>
+      <div class="social-handle">@elementariabakerycafe</div>
+      <div class="social-followers">19K Followers</div>
+    </a>
+    <a href="https://www.facebook.com/elementariabakerycafe/" target="_blank" class="social-card social-fb">
+      <div class="social-icon">👍</div>
+      <div class="social-platform">Facebook</div>
+      <div class="social-handle">@elementariabakerycafe</div>
+      <div class="social-followers">7K+ Likes</div>
+    </a>
+    <a href="https://www.zomato.com/mumbai/elementaria-bakery-cafe-lower-parel" target="_blank" class="social-card social-zom">
+      <div class="social-icon">🍽️</div>
+      <div class="social-platform">Zomato</div>
+      <div class="social-handle">Elementaria Bakery Cafe</div>
+      <div class="social-followers">Order & Review</div>
+    </a>
+    <a href="https://magicpin.in/Mumbai/Bandra-Kurla-Complex/Restaurant/Elementaria-Bakery-Cafe/store/c1599/" target="_blank" class="social-card social-mp">
+      <div class="social-icon">✨</div>
+      <div class="social-platform">Magicpin</div>
+      <div class="social-handle">Elementaria Bakery Cafe</div>
+      <div class="social-followers">Exclusive Deals</div>
+    </a>
+    <a href="https://www.swiggy.com" target="_blank" class="social-card social-sw">
+      <div class="social-icon">🛵</div>
+      <div class="social-platform">Swiggy</div>
+      <div class="social-handle">Elementaria Bakery Cafe</div>
+      <div class="social-followers">Order Delivery</div>
+    </a>
+    <a href="mailto:elementariabakeryandcafe@gmail.com" class="social-card social-mp">
+      <div class="social-icon">✉️</div>
+      <div class="social-platform">Email Us</div>
+      <div class="social-handle">elementariabakeryandcafe</div>
+      <div class="social-followers">@gmail.com</div>
+    </a>
+  </div>
+  <div style="margin-top:3rem; display:flex; flex-direction:column; align-items:center; gap:0.6rem;" class="reveal">
+    <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:1.05rem;color:var(--muted);">📞 Call us at</div>
+    <a href="tel:+919702288999" style="font-family:'Playfair Display',serif;font-size:2rem;color:var(--gold);text-decoration:none;letter-spacing:0.05em;transition:color 0.3s;" onmouseover="this.style.color='var(--caramel)'" onmouseout="this.style.color='var(--gold)'">+91 97022 88999</a>
+    <div style="font-size:0.72rem;color:var(--muted);letter-spacing:0.15em;margin-top:0.3rem;">ALL FIVE LOCATIONS · OPEN DAILY</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Elementaria</div>
+  <div class="footer-tagline">Bakery Cafe · Mumbai · Five Locations</div>
+  <div class="footer-delivery">
+    <a href="https://www.swiggy.com" target="_blank" class="delivery-badge" style="text-decoration:none;cursor:pointer;transition:border-color 0.3s,color 0.3s;" onmouseover="this.style.borderColor='rgba(252,88,0,0.6)';this.style.color='var(--cream)'" onmouseout="this.style.borderColor='';this.style.color=''">🛵 Swiggy</a>
+    <a href="https://magicpin.in/Mumbai/Bandra-Kurla-Complex/Restaurant/Elementaria-Bakery-Cafe/store/c1599/" target="_blank" class="delivery-badge" style="text-decoration:none;cursor:pointer;transition:border-color 0.3s,color 0.3s;" onmouseover="this.style.borderColor='rgba(201,168,106,0.6)';this.style.color='var(--cream)'" onmouseout="this.style.borderColor='';this.style.color=''">✨ Magicpin</a>
+    <div class="delivery-badge">📅 District.in Reservations</div>
+  </div>
+  <div style="display:flex;justify-content:center;gap:1.5rem;margin-bottom:2rem;flex-wrap:wrap;">
+    <a href="https://www.instagram.com/elementariabakerycafe/" target="_blank" style="color:var(--muted);text-decoration:none;font-size:0.75rem;letter-spacing:0.1em;transition:color 0.3s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">📸 Instagram</a>
+    <a href="https://www.facebook.com/elementariabakerycafe/" target="_blank" style="color:var(--muted);text-decoration:none;font-size:0.75rem;letter-spacing:0.1em;transition:color 0.3s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">👍 Facebook</a>
+    <a href="https://www.zomato.com/mumbai/elementaria-bakery-cafe-lower-parel" target="_blank" style="color:var(--muted);text-decoration:none;font-size:0.75rem;letter-spacing:0.1em;transition:color 0.3s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">🍽️ Zomato</a>
+    <a href="mailto:elementariabakeryandcafe@gmail.com" style="color:var(--muted);text-decoration:none;font-size:0.75rem;letter-spacing:0.1em;transition:color 0.3s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">✉️ Email</a>
+    <a href="tel:+919702288999" style="color:var(--muted);text-decoration:none;font-size:0.75rem;letter-spacing:0.1em;transition:color 0.3s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">📞 +91 97022 88999</a>
+  </div>
+  <div class="footer-links">
+    <a href="#products">Pastries</a>
+    <a href="#menu">Menu</a>
+    <a href="#customizer">Custom Cakes</a>
+    <a href="#locations">Locations</a>
+    <a href="#story">Our Story</a>
+    <a href="#social-section">Connect</a>
+  </div>
+  <div class="footer-copy">© 2025 Elementaria Bakery Cafe. All rights reserved. Mumbai, India.</div>
+</footer>
+
+<!-- CART -->
+<button id="cart-btn" onclick="toggleCart(event)">
+  🛒
+  <span id="cart-count">0</span>
+</button>
+<div id="cart-panel">
+  <div class="cart-header">
+    <h3>Your Order</h3>
+    <button class="cart-close" onclick="toggleCart(event)">✕</button>
+  </div>
+  <div class="cart-items" id="cartItems">
+    <div style="text-align:center;padding:3rem 1rem;color:var(--muted);font-style:italic;font-family:'Cormorant Garamond',serif;font-size:1.1rem;">Your cart is empty.<br>Add something delicious!</div>
+  </div>
+  <div class="cart-footer">
+    <div class="cart-total">
+      <span class="cart-total-label">Total</span>
+      <span class="cart-total-price">₹<span id="cartTotal">0</span></span>
+    </div>
+    <button class="cart-checkout-btn" onclick="checkout()">Proceed to Checkout →</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon">🎉</span>
+  <span class="toast-text" id="toastText">Added to cart!</span>
+</div>
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────
+const PRODUCTS = [
+  { id:1, name:'Intense Chocolate Tub Cake', desc:'55% dark Belgian chocolate, rich cocoa ganache, moist crumb layers', price:275, badge:'Bestseller', icon:'🍫', color:'#3D1A08' },
+  { id:2, name:'Dark Chocolate 70% Tub Cake', desc:'Intense 70% dark chocolate with complex, bittersweet notes', price:280, badge:'Premium', icon:'🍫', color:'#2A1005' },
+  { id:3, name:'Nutella Tub Cake', desc:'Velvety Nutella frosting, crushed hazelnut toppings, dreamy layers', price:280, badge:'', icon:'🌰', color:'#5C3017' },
+  { id:4, name:'Red Velvet Hazelnut Tub Cake', desc:'Vibrant red velvet layers, cream cheese frosting, hazelnut crunch', price:313, badge:'Signature', icon:'🎂', color:'#6B1414' },
+  { id:5, name:'Oreo Libe Tub Cake', desc:'Oreo cookie crumble layers, cream filling, crushed Oreo topping', price:250, badge:'Popular', icon:'⚫', color:'#1A1A1A' },
+  { id:6, name:'Butter Croissant', desc:'Golden-brown flaky layers, pure European butter, baked fresh daily', price:138, badge:'Fresh Daily', icon:'🥐', color:'#C4832E' },
+  { id:7, name:'Almond Brownie', desc:'Fudgy dark chocolate brownie with toasted almond pieces', price:160, badge:'', icon:'🍩', color:'#3D2008' },
+  { id:8, name:'Mushroom Patey Pie', desc:'Golden pastry crust, savory mushroom and herb filling, flaky texture', price:188, badge:'Savory', icon:'🥧', color:'#8B6914' },
+];
+
+const MENU_CATEGORIES = {
+  'Cakes': [
+    { name:'Intense Chocolate Tub Cake', desc:'55% dark chocolate', price:'₹275', veg:true, icon:'🍫' },
+    { name:'Dark Chocolate 70% Tub Cake', desc:'Bittersweet & rich', price:'₹280', veg:true, icon:'🍫' },
+    { name:'Nutella Tub Cake', desc:'Hazelnut & Nutella frosting', price:'₹280', veg:true, icon:'🌰' },
+    { name:'Red Velvet Hazelnut', desc:'Cream cheese & hazelnut', price:'₹313', veg:true, icon:'🎂' },
+    { name:'Oreo Libe Tub Cake', desc:'Oreo crumble layers', price:'₹250', veg:true, icon:'⚫' },
+  ],
+  'Bakery': [
+    { name:'Butter Croissant', desc:'European butter, flaky layers', price:'₹138', veg:true, icon:'🥐' },
+    { name:'Almond Brownie', desc:'Fudgy with toasted almonds', price:'₹160', veg:true, icon:'🍩' },
+    { name:'Mushroom Patey Pie', desc:'Savory herb filling', price:'₹188', veg:true, icon:'🥧' },
+    { name:'Chocolate Muffin', desc:'Rich chocolate crumb', price:'₹120', veg:true, icon:'🧁' },
+    { name:'Blueberry Danish', desc:'Fresh blueberry compote', price:'₹145', veg:true, icon:'🫐' },
+  ],
+  'Coffee': [
+    { name:'Single Origin Espresso', desc:'AAA Arabica, pure & intense', price:'₹180', veg:true, icon:'☕' },
+    { name:'Cappuccino', desc:'Velvety milk foam blend', price:'₹210', veg:true, icon:'☕' },
+    { name:'Cold Brew', desc:'12-hour slow brewed', price:'₹230', veg:true, icon:'🧊' },
+    { name:'Hazelnut Latte', desc:'Arabica with hazelnut syrup', price:'₹240', veg:true, icon:'☕' },
+    { name:'Belgian Cocoa Mocha', desc:'Coffee meets Belgian cocoa', price:'₹260', veg:true, icon:'🍫' },
+  ],
+  'Shakes': [
+    { name:'Mango Milkshake', desc:'Thick Alphonso mango', price:'₹269', veg:true, icon:'🥭' },
+    { name:'Chocolate Shake', desc:'Belgian cocoa & cream', price:'₹249', veg:true, icon:'🍫' },
+    { name:'Oreo Shake', desc:'Crushed Oreo & vanilla', price:'₹259', veg:true, icon:'⚫' },
+    { name:'Strawberry Shake', desc:'Fresh strawberry blend', price:'₹259', veg:true, icon:'🍓' },
+  ],
+  'Italian': [
+    { name:'Penne Arrabbiata', desc:'Spicy tomato & basil', price:'₹299', veg:true, icon:'🍝' },
+    { name:'Risotto Mushroom', desc:'Creamy wild mushroom', price:'₹349', veg:true, icon:'🍚' },
+    { name:'Margherita Pizza', desc:'San Marzano, fresh mozzarella', price:'₹379', veg:true, icon:'🍕' },
+    { name:'Pasta Alfredo', desc:'Rich cream & parmesan', price:'₹319', veg:true, icon:'🍝' },
+  ],
+  'Fast Food': [
+    { name:'Veg Burger', desc:'Crispy patty & house sauce', price:'₹219', veg:true, icon:'🍔' },
+    { name:'Paneer Wrap', desc:'Tikka spiced paneer', price:'₹229', veg:true, icon:'🌯' },
+    { name:'Loaded Fries', desc:'Cheese & jalapeño', price:'₹189', veg:true, icon:'🍟' },
+    { name:'Club Sandwich', desc:'Triple decker, grilled', price:'₹249', veg:true, icon:'🥪' },
+  ],
+  'North Indian': [
+    { name:'Paneer Butter Masala', desc:'Creamy tomato gravy', price:'₹299', veg:true, icon:'🍛' },
+    { name:'Dal Makhani', desc:'Slow-cooked lentils', price:'₹279', veg:true, icon:'🫙' },
+    { name:'Butter Naan', desc:'Tandoor-baked, soft', price:'₹60', veg:true, icon:'🫓' },
+    { name:'Veg Biryani', desc:'Basmati & aromatic spices', price:'₹319', veg:true, icon:'🍚' },
+  ],
+};
+
+const LOCATIONS = [
+  { num:'01', name:'BKC', addr:'Bandra Kurla Complex, Next to Canara Bank & Indian Oil Petrol Pump, Mumbai', tag:'Flagship Store', flagship:true },
+  { num:'02', name:'Chembur', addr:'Chembur, Mumbai', tag:'East Mumbai' },
+  { num:'03', name:'Juhu', addr:'Juhu, Mumbai', tag:'Beach Side' },
+  { num:'04', name:'Lower Parel', addr:'Shop 10, Khimji Nagji Chawl 1, Opp. Phoenix High Street, Lower Parel, Mumbai 400013', tag:'Central Hub' },
+  { num:'05', name:'Powai', addr:'Powai, Mumbai', tag:'IT District' },
+];
+
+const MAP_DOTS = [
+  { name:'BKC', x:'42%', y:'45%' },
+  { name:'Chembur', x:'62%', y:'55%' },
+  { name:'Juhu', x:'30%', y:'35%' },
+  { name:'Lower Parel', x:'38%', y:'58%' },
+  { name:'Powai', x:'68%', y:'38%' },
+];
+
+const FLAVOURS = ['Intense Chocolate','Dark Choc 70%','Nutella','Red Velvet','Oreo','Vanilla','Strawberry'];
+const FROSTING_COLORS = [
+  { color:'#3D1A08', name:'Dark Chocolate' },
+  { color:'#C62828', name:'Red Velvet' },
+  { color:'#FFF8DC', name:'Vanilla Cream' },
+  { color:'#795548', name:'Nutella' },
+  { color:'#1A1A1A', name:'Black Oreo' },
+  { color:'#F48FB1', name:'Strawberry' },
+  { color:'#C9A86A', name:'Caramel' },
+  { color:'#4CAF50', name:'Matcha' },
+];
+const TOPPINGS = ['Hazelnut Crushed','Oreo Crumbs','Fresh Berries','Choc Shavings','Sprinkles','Edible Gold','Almonds','Caramel Drizzle'];
+
+// ─── CART STATE ─────────────────────────────────────────────────────────
+let cartItems = [];
+let cartOpen = false;
+
+// ─── CUSTOMIZER STATE ───────────────────────────────────────────────────
+let cakeConfig = { flavour:'Intense Chocolate', color:'#3D1A08', toppings:[], size:6 };
+
+// ─── THREE.JS BACKGROUND ────────────────────────────────────────────────
+let scene, camera, renderer, bakeryObjects = [], clock;
+
+function initThree() {
+  const canvas = document.getElementById('three-canvas');
+  scene = new THREE.Scene();
+  clock = new THREE.Clock();
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.set(0, 2, 8);
+  renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.9;
+
+  // Fog
+  scene.fog = new THREE.FogExp2(0x0D0503, 0.04);
+
+  // Ambient + warm light
+  const ambient = new THREE.AmbientLight(0xF5E0C0, 0.3);
+  scene.add(ambient);
+  const warmLight = new THREE.PointLight(0xC9A86A, 1.5, 20);
+  warmLight.position.set(0, 5, 2);
+  warmLight.castShadow = true;
+  scene.add(warmLight);
+  const fillLight = new THREE.DirectionalLight(0xFFD0A0, 0.5);
+  fillLight.position.set(-5, 3, -2);
+  scene.add(fillLight);
+
+  // Floor (polished wood)
+  const floorGeo = new THREE.PlaneGeometry(40, 40);
+  const floorMat = new THREE.MeshStandardMaterial({ color:0x3D2314, roughness:0.4, metalness:0.1 });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI/2; floor.position.y = -2; floor.receiveShadow = true;
+  scene.add(floor);
+
+  // Back wall
+  const wallGeo = new THREE.PlaneGeometry(40, 12);
+  const wallMat = new THREE.MeshStandardMaterial({ color:0x2A1609, roughness:0.9 });
+  const wall = new THREE.Mesh(wallGeo, wallMat);
+  wall.position.z = -8; wall.position.y = 4;
+  scene.add(wall);
+
+  // Floating pastry shapes
+  createFloatingPastries();
+
+  // Window glow
+  const glowGeo = new THREE.PlaneGeometry(6, 4);
+  const glowMat = new THREE.MeshBasicMaterial({ color:0xFFE4B0, transparent:true, opacity:0.04 });
+  const glow = new THREE.Mesh(glowGeo, glowMat);
+  glow.position.set(0, 1, -7.9);
+  scene.add(glow);
+
+  // Coffee steam particles
+  createSteamParticles();
+
+  window.addEventListener('resize', onResize);
+  animateThree();
+}
+
+function createFloatingPastries() {
+  const shapes = [
+    // Croissants (torus)
+    { geo: new THREE.TorusGeometry(0.35,0.15,8,20,Math.PI), color:0xC4832E, pos:[-3,1,2], speed:0.4 },
+    { geo: new THREE.TorusGeometry(0.35,0.15,8,20,Math.PI), color:0xC4832E, pos:[4,2,-1], speed:0.5 },
+    // Cakes (cylinders)
+    { geo: new THREE.CylinderGeometry(0.4,0.4,0.5,20), color:0x3D1A08, pos:[1.5,0.5,1], speed:0.3 },
+    { geo: new THREE.CylinderGeometry(0.5,0.5,0.6,20), color:0x6B1414, pos:[-2,1.5,-1], speed:0.35 },
+    { geo: new THREE.CylinderGeometry(0.35,0.35,0.4,20), color:0x1A1A1A, pos:[3,-0.5,0.5], speed:0.45 },
+    // Donuts (torus)
+    { geo: new THREE.TorusGeometry(0.4,0.18,8,20), color:0x8B3A1A, pos:[-4,0,0], speed:0.5 },
+    { geo: new THREE.TorusGeometry(0.3,0.14,8,20), color:0xC9A86A, pos:[2,2,2], speed:0.38 },
+    // Sphere (muffin tops)
+    { geo: new THREE.SphereGeometry(0.3,12,8), color:0x4A2008, pos:[0,-1,3], speed:0.55 },
+    { geo: new THREE.SphereGeometry(0.25,12,8), color:0x8B3A1A, pos:[-1.5,2,1], speed:0.42 },
+  ];
+
+  shapes.forEach((s, i) => {
+    const mat = new THREE.MeshStandardMaterial({ color:s.color, roughness:0.5, metalness:0.05 });
+    const mesh = new THREE.Mesh(s.geo, mat);
+    mesh.position.set(...s.pos);
+    mesh.castShadow = true;
+    mesh.userData = { baseY:s.pos[1], speed:s.speed, offset:i*0.8, rotSpeed:0.005+Math.random()*0.01 };
+    scene.add(mesh);
+    bakeryObjects.push(mesh);
+  });
+}
+
+function createSteamParticles() {
+  const pts = [];
+  for(let i=0;i<80;i++) {
+    pts.push(new THREE.Vector3(
+      (Math.random()-0.5)*10,
+      (Math.random()-0.5)*6,
+      (Math.random()-0.5)*8
+    ));
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = new THREE.PointsMaterial({ color:0xFFE4B0, size:0.04, transparent:true, opacity:0.35 });
+  const points = new THREE.Points(geo, mat);
+  scene.add(points);
+  bakeryObjects.push({ userData:{ isParticles:true }, obj:points });
+}
+
+let mouseX=0, mouseY=0;
+document.addEventListener('mousemove', e => {
+  mouseX = (e.clientX/window.innerWidth - 0.5)*2;
+  mouseY = (e.clientY/window.innerHeight - 0.5)*2;
+});
+
+function animateThree() {
+  requestAnimationFrame(animateThree);
+  const t = clock.getElapsedTime();
+  // Camera subtle drift
+  camera.position.x += (mouseX*0.5 - camera.position.x)*0.03;
+  camera.position.y += (-mouseY*0.3 + 2 - camera.position.y)*0.03;
+  camera.lookAt(0, 0, 0);
+
+  bakeryObjects.forEach(obj => {
+    if(!obj.userData) return;
+    if(obj.userData.isParticles) {
+      if(obj.obj) obj.obj.rotation.y = t*0.03;
+      return;
+    }
+    obj.position.y = obj.userData.baseY + Math.sin(t*obj.userData.speed + obj.userData.offset)*0.35;
+    obj.rotation.y += obj.userData.rotSpeed;
+    obj.rotation.x = Math.sin(t*0.2 + obj.userData.offset)*0.1;
+  });
+
+  renderer.render(scene, camera);
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// ─── CAKE CUSTOMIZER 3D ─────────────────────────────────────────────────
+let cakeScene, cakeCamera, cakeRenderer, cakeMesh, frostingMesh, toppingMeshes=[];
+
+function initCakeCustomizer() {
+  const canvas = document.getElementById('cake-canvas');
+  cakeScene = new THREE.Scene();
+  cakeCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 50);
+  cakeCamera.position.set(0, 2.5, 4);
+  cakeCamera.lookAt(0, 0, 0);
+
+  cakeRenderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  const parent = canvas.parentElement;
+  cakeRenderer.setSize(parent.clientWidth, parent.clientHeight);
+  cakeRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  cakeRenderer.shadowMap.enabled = true;
+  cakeRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+  cakeRenderer.toneMappingExposure = 1.1;
+
+  // Lights
+  cakeScene.add(new THREE.AmbientLight(0xFFE4C0, 0.5));
+  const key = new THREE.DirectionalLight(0xFFD0A0, 2);
+  key.position.set(3, 5, 3); key.castShadow=true;
+  cakeScene.add(key);
+  const fill = new THREE.PointLight(0xC9A86A, 0.8, 10);
+  fill.position.set(-2, 2, 2);
+  cakeScene.add(fill);
+  const rim = new THREE.DirectionalLight(0xFFFFFF, 0.3);
+  rim.position.set(-3, 2, -4);
+  cakeScene.add(rim);
+
+  // Plate
+  const plateGeo = new THREE.CylinderGeometry(1.6, 1.4, 0.12, 40);
+  const plateMat = new THREE.MeshStandardMaterial({ color:0xF5E6D3, roughness:0.3, metalness:0.5 });
+  const plate = new THREE.Mesh(plateGeo, plateMat);
+  plate.position.y = -0.65; plate.receiveShadow=true;
+  cakeScene.add(plate);
+
+  // Cake body
+  const cakeGeo = new THREE.CylinderGeometry(1.0, 1.0, 1.2, 40);
+  const cakeMat = new THREE.MeshStandardMaterial({ color:parseInt(cakeConfig.color.replace('#','0x')), roughness:0.65, metalness:0.05 });
+  cakeMesh = new THREE.Mesh(cakeGeo, cakeMat);
+  cakeMesh.position.y = -0.05; cakeMesh.castShadow=true;
+  cakeScene.add(cakeMesh);
+
+  // Frosting (top layer)
+  const frostGeo = new THREE.CylinderGeometry(1.05, 1.02, 0.18, 40);
+  const frostMat = new THREE.MeshStandardMaterial({ color:parseInt(cakeConfig.color.replace('#','0x')), roughness:0.4, metalness:0.0 });
+  frostingMesh = new THREE.Mesh(frostGeo, frostMat);
+  frostingMesh.position.y = 0.65;
+  cakeScene.add(frostingMesh);
+
+  // Drip ring
+  const dripGeo = new THREE.TorusGeometry(1.0, 0.06, 8, 40);
+  const dripMat = new THREE.MeshStandardMaterial({ color:0x2A1005, roughness:0.3 });
+  const drip = new THREE.Mesh(dripGeo, dripMat);
+  drip.position.y = 0.5; drip.rotation.x = 0.2;
+  cakeScene.add(drip);
+
+  animateCake();
+}
+
+let cakeAngle=0;
+function animateCake() {
+  requestAnimationFrame(animateCake);
+  cakeAngle += 0.008;
+  if(cakeMesh) {
+    cakeMesh.rotation.y = cakeAngle;
+    if(frostingMesh) frostingMesh.rotation.y = cakeAngle;
+    toppingMeshes.forEach(m => m.rotation.y = cakeAngle);
+  }
+  cakeCamera.position.x = Math.sin(cakeAngle*0.3)*0.5;
+  cakeCamera.position.y = 2.5 + Math.sin(cakeAngle*0.2)*0.2;
+  cakeCamera.lookAt(0,0,0);
+  if(cakeRenderer) cakeRenderer.render(cakeScene, cakeCamera);
+}
+
+function updateCakeColor(hex) {
+  if(!cakeMesh) return;
+  const c = parseInt(hex.replace('#','0x'));
+  cakeMesh.material.color.setHex(c);
+  frostingMesh.material.color.setHex(c);
+  cakeConfig.color = hex;
+  updatePrice();
+}
+
+function updateCakeSize(val) {
+  cakeConfig.size = parseInt(val);
+  document.getElementById('sizeLabel').textContent = val+'″';
+  const s = 0.7 + (val-4)*0.05;
+  if(cakeMesh) { cakeMesh.scale.set(s,1,s); frostingMesh.scale.set(s,1,s); }
+  updatePrice();
+}
+
+function updatePrice() {
+  const base = 249;
+  const sizeAdd = (cakeConfig.size - 6)*30;
+  const toppingAdd = cakeConfig.toppings.length * 25;
+  const flavourPremium = ['Dark Choc 70%','Nutella','Red Velvet'].includes(cakeConfig.flavour) ? 30 : 0;
+  document.getElementById('cakePrice').textContent = base + sizeAdd + toppingAdd + flavourPremium;
+}
+
+// ─── BUILD UI ───────────────────────────────────────────────────────────
+function buildProducts() {
+  const grid = document.getElementById('productsGrid');
+  PRODUCTS.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.innerHTML = `
+      <div class="product-3d-preview" style="background:linear-gradient(135deg,${p.color}40,${p.color}20);display:flex;align-items:center;justify-content:center;font-size:5rem;cursor:default;">${p.icon}</div>
+      ${p.badge ? `<div class="product-badge">${p.badge}</div>` : ''}
+      <div class="product-name">${p.name}</div>
+      <div class="product-desc">${p.desc}</div>
+      <div class="product-footer">
+        <div class="product-price">₹${p.price} <span>incl. taxes</span></div>
+        <button class="product-add" onclick="event.stopPropagation();addToCart(${p.id})">+</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function buildMenu() {
+  const tabs = document.getElementById('menuTabs');
+  const content = document.getElementById('menuContent');
+  Object.keys(MENU_CATEGORIES).forEach((cat, i) => {
+    const tab = document.createElement('button');
+    tab.className = 'menu-tab' + (i===0?' active':'');
+    tab.textContent = cat;
+    tab.onclick = () => {
+      document.querySelectorAll('.menu-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.menu-items').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('menu-'+i).classList.add('active');
+    };
+    tabs.appendChild(tab);
+
+    const div = document.createElement('div');
+    div.className = 'menu-items' + (i===0?' active':'');
+    div.id = 'menu-'+i;
+    MENU_CATEGORIES[cat].forEach(item => {
+      div.innerHTML += `
+        <div class="menu-item" onclick="addToCartByName('${item.name}',parseInt('${item.price.replace('₹','')}'))">
+          <div class="menu-item-icon">${item.icon}</div>
+          <div class="menu-item-info">
+            <div class="menu-item-name">${item.veg?'<span class="veg-dot"></span>':''}${item.name}</div>
+            <div class="menu-item-desc">${item.desc}</div>
+          </div>
+          <div class="menu-item-price">${item.price}</div>
+        </div>
+      `;
+    });
+    content.appendChild(div);
+  });
+}
+
+function buildCustomizer() {
+  // Flavour chips
+  const fc = document.getElementById('flavourChips');
+  FLAVOURS.forEach((f,i) => {
+    const c = document.createElement('button');
+    c.className = 'chip'+(i===0?' active':'');
+    c.textContent = f;
+    c.onclick = () => {
+      document.querySelectorAll('#flavourChips .chip').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+      cakeConfig.flavour = f;
+      updatePrice();
+    };
+    fc.appendChild(c);
+  });
+
+  // Color swatches
+  const cs = document.getElementById('colorSwatches');
+  FROSTING_COLORS.forEach((col,i) => {
+    const s = document.createElement('div');
+    s.className = 'swatch'+(i===0?' active':'');
+    s.style.background = col.color;
+    s.title = col.name;
+    s.onclick = () => {
+      document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('active'));
+      s.classList.add('active');
+      updateCakeColor(col.color);
+    };
+    cs.appendChild(s);
+  });
+
+  // Topping chips
+  const tc = document.getElementById('toppingChips');
+  TOPPINGS.forEach(top => {
+    const c = document.createElement('button');
+    c.className = 'chip';
+    c.textContent = top;
+    c.onclick = () => {
+      c.classList.toggle('active');
+      if(c.classList.contains('active')) {
+        cakeConfig.toppings.push(top);
+      } else {
+        cakeConfig.toppings = cakeConfig.toppings.filter(t=>t!==top);
+      }
+      updatePrice();
+    };
+    tc.appendChild(c);
+  });
+}
+
+function buildLocations() {
+  const grid = document.getElementById('locationsGrid');
+  LOCATIONS.forEach(loc => {
+    const card = document.createElement('div');
+    card.className = 'location-card';
+    card.innerHTML = `
+      ${loc.flagship ? '<div class="flagship-badge">Flagship</div>' : ''}
+      <div class="location-num">${loc.num}</div>
+      <div class="location-name">${loc.name}</div>
+      <div class="location-addr">${loc.addr}</div>
+      <div class="location-tag">${loc.tag}</div>
+      <div class="location-phone">📞 +91 97022 88999</div>
+    `;
+    card.onclick = () => showToast('📍', `Directions to ${loc.name} opening in Maps...`);
+    grid.appendChild(card);
+  });
+
+  // Map dots
+  const map = document.getElementById('mapVisual');
+  map.innerHTML = '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-style:italic;font-size:1.1rem;color:rgba(201,168,106,0.15);pointer-events:none;">Mumbai</div>';
+  MAP_DOTS.forEach(dot => {
+    const el = document.createElement('div');
+    el.className = 'map-dot';
+    el.style.left = dot.x;
+    el.style.top = dot.y;
+    el.style.animationDelay = Math.random()+'s';
+    el.innerHTML = `<div class="map-dot-label">${dot.name}</div>`;
+    el.onclick = () => showToast('📍', `${dot.name} — tap for directions!`);
+    map.appendChild(el);
+  });
+}
+
+// ─── CART LOGIC ─────────────────────────────────────────────────────────
+function addToCart(productId) {
+  const p = PRODUCTS.find(x=>x.id===productId);
+  if(!p) return;
+  cartItems.push({ name:p.name, price:p.price, icon:p.icon });
+  updateCartUI();
+  showToast('🎉', `${p.name} added to cart!`);
+}
+
+function addToCartByName(name, price) {
+  const icons = {'Cakes':'🎂','Coffee':'☕','Bakery':'🥐','Shakes':'🥤','Italian':'🍝','Fast Food':'🍔','North Indian':'🍛'};
+  cartItems.push({ name, price, icon:'🍽️' });
+  updateCartUI();
+  showToast('✨', `${name} added!`);
+}
+
+function addCustomCake() {
+  const price = parseInt(document.getElementById('cakePrice').textContent);
+  cartItems.push({ name:`Custom ${cakeConfig.flavour} Cake (${cakeConfig.size}″)`, price, icon:'🎂' });
+  updateCartUI();
+  showToast('🎂', 'Custom cake added to cart!');
+}
+
+function saveCakeDesign() { showToast('💾', 'Design saved to your account!'); }
+
+function removeCartItem(i) {
+  cartItems.splice(i,1);
+  updateCartUI();
+}
+
+function updateCartUI() {
+  const count = cartItems.length;
+  document.getElementById('cart-count').textContent = count;
+  const total = cartItems.reduce((s,x)=>s+x.price, 0);
+  document.getElementById('cartTotal').textContent = total;
+  const container = document.getElementById('cartItems');
+  if(!count) {
+    container.innerHTML = '<div style="text-align:center;padding:3rem 1rem;color:var(--muted);font-style:italic;font-family:\'Cormorant Garamond\',serif;font-size:1.1rem;">Your cart is empty.<br>Add something delicious!</div>';
+    return;
+  }
+  container.innerHTML = cartItems.map((item,i) => `
+    <div class="cart-item">
+      <div class="cart-item-icon">${item.icon}</div>
+      <div class="cart-item-info">
+        <div class="cart-item-name">${item.name}</div>
+        <div class="cart-item-price">₹${item.price}</div>
+      </div>
+      <button class="cart-item-remove" onclick="removeCartItem(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function toggleCart(e) {
+  if(e) e.preventDefault();
+  cartOpen = !cartOpen;
+  document.getElementById('cart-panel').classList.toggle('open', cartOpen);
+}
+
+function checkout() {
+  if(!cartItems.length) { showToast('⚠️', 'Please add items first!'); return; }
+  showToast('🛵', 'Redirecting to Swiggy checkout...');
+  setTimeout(() => { cartItems=[]; updateCartUI(); toggleCart(null); }, 1800);
+}
+
+// ─── TOAST ──────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(icon, text) {
+  clearTimeout(toastTimer);
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastText').textContent = text;
+  document.getElementById('toast').classList.add('show');
+  toastTimer = setTimeout(() => document.getElementById('toast').classList.remove('show'), 2800);
+}
+
+// ─── CURSOR ─────────────────────────────────────────────────────────────
+const cursor = document.getElementById('cursor');
+const cursorRing = document.getElementById('cursorRing');
+let cx=0,cy=0,rx=0,ry=0;
+document.addEventListener('mousemove', e => { cx=e.clientX; cy=e.clientY; });
+(function animCursor() {
+  rx += (cx-rx)*0.12; ry += (cy-ry)*0.12;
+  cursor.style.left = cx+'px'; cursor.style.top = cy+'px';
+  cursorRing.style.left = rx+'px'; cursorRing.style.top = ry+'px';
+  requestAnimationFrame(animCursor);
+})();
+document.querySelectorAll('a,button,.product-card,.menu-item,.location-card,.ingredient-badge,.chip,.swatch').forEach(el => {
+  el.addEventListener('mouseenter', ()=>{ cursor.style.width='20px';cursor.style.height='20px';cursorRing.style.width='55px';cursorRing.style.height='55px'; });
+  el.addEventListener('mouseleave', ()=>{ cursor.style.width='14px';cursor.style.height='14px';cursorRing.style.width='38px';cursorRing.style.height='38px'; });
+});
+
+// ─── PARTICLES ──────────────────────────────────────────────────────────
+function createParticles() {
+  const container = document.getElementById('particles');
+  for(let i=0;i<18;i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 3+Math.random()*8;
+    p.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${Math.random()*100}%;
+      animation-duration:${12+Math.random()*20}s;
+      animation-delay:${-Math.random()*20}s;
+    `;
+    container.appendChild(p);
+  }
+}
+
+// ─── SCROLL REVEAL ──────────────────────────────────────────────────────
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold:0.1 });
+function initReveal() {
+  document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+}
+
+// ─── INGREDIENT HIGHLIGHT ───────────────────────────────────────────────
+function highlightIngredient(type) {
+  const messages = {
+    wheat:'🌾 Premium soft winter wheat — the foundation of every Elementaria creation',
+    coffee:'☕ AAA-grade single-origin Arabica — the soul of our coffee bar',
+    cocoa:'🍫 Belgian cocoa pods — the secret of our legendary chocolate cakes',
+    water:'💧 Ultra-pure crisp water — the invisible backbone of great baking',
+  };
+  showToast(['🌾','☕','🍫','💧'][['wheat','coffee','cocoa','water'].indexOf(type)], messages[type]);
+}
+
+// ─── LOADER ─────────────────────────────────────────────────────────────
+function simulateLoad() {
+  const bar = document.getElementById('loaderBar');
+  const pct = document.getElementById('loaderPct');
+  let p=0;
+  const iv = setInterval(()=>{
+    p += 1.5+Math.random()*3;
+    if(p>100) p=100;
+    bar.style.width = p+'%';
+    pct.textContent = Math.round(p)+'%';
+    if(p===100) {
+      clearInterval(iv);
+      setTimeout(()=>{
+        document.getElementById('loader').classList.add('hidden');
+        initThree();
+        initCakeCustomizer();
+        buildProducts();
+        buildMenu();
+        buildCustomizer();
+        buildLocations();
+        createParticles();
+        initReveal();
+        // Re-apply reveal observer after building
+        setTimeout(()=>{
+          document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+        }, 100);
+      }, 400);
+    }
+  }, 40);
+}
+
+// Click outside cart to close
+document.addEventListener('click', e => {
+  if(cartOpen && !document.getElementById('cart-panel').contains(e.target) && e.target.id!=='cart-btn' && !e.target.closest('#cart-btn')) {
+    toggleCart(null);
+  }
+});
+
+simulateLoad();
+
+// ─── PARALLAX SCROLL ────────────────────────────────────────────────────
+function initParallax() {
+  const elements = [
+    { el: document.getElementById('parallaxBg1'), speed: 0.35 },
+    { el: document.getElementById('parallaxBg2'), speed: 0.4 },
+    { el: document.getElementById('parallaxBg3'), speed: 0.3 },
+  ];
+
+  function onScroll() {
+    const sy = window.scrollY;
+    elements.forEach(({ el, speed }) => {
+      if (!el) return;
+      const parent = el.closest('.parallax-strip, #gallery-parallax');
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      const offset = rect.top + sy;
+      const relScroll = sy - offset;
+      el.style.transform = `translateY(${relScroll * speed}px)`;
+    });
+  }
+
+  // Parallax gallery reveal
+  const gallerySection = document.getElementById('gallery-parallax');
+  const galleryObs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) gallerySection.classList.add('revealed'); });
+  }, { threshold: 0.15 });
+  if (gallerySection) galleryObs.observe(gallerySection);
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+}
+
+// ─── CAROUSEL ───────────────────────────────────────────────────────────
+let carouselIndex = 0;
+const CAROUSEL_VISIBLE = () => window.innerWidth < 700 ? 1 : window.innerWidth < 1100 ? 2 : 3;
+
+function initCarousel() {
+  const track = document.getElementById('carouselTrack');
+  const dotsEl = document.getElementById('carouselDots');
+  if (!track || !dotsEl) return;
+
+  const cards = track.querySelectorAll('.carousel-card');
+  const total = cards.length;
+  const maxIndex = Math.max(0, total - CAROUSEL_VISIBLE());
+
+  dotsEl.innerHTML = '';
+  for (let i = 0; i <= maxIndex; i++) {
+    const d = document.createElement('div');
+    d.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goCarousel(i);
+    dotsEl.appendChild(d);
+  }
+
+  updateCarousel();
+}
+
+function updateCarousel() {
+  const track = document.getElementById('carouselTrack');
+  if (!track) return;
+  const cardWidth = 320 + 24; // card width + gap
+  track.style.transform = `translateX(-${carouselIndex * cardWidth}px)`;
+
+  document.querySelectorAll('.carousel-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === carouselIndex);
+  });
+}
+
+function goCarousel(i) {
+  const track = document.getElementById('carouselTrack');
+  if (!track) return;
+  const total = track.querySelectorAll('.carousel-card').length;
+  const maxIndex = Math.max(0, total - CAROUSEL_VISIBLE());
+  carouselIndex = Math.max(0, Math.min(i, maxIndex));
+  updateCarousel();
+}
+
+function carouselMove(dir) {
+  goCarousel(carouselIndex + dir);
+}
+
+// Touch swipe for carousel
+function initCarouselTouch() {
+  const wrap = document.querySelector('.carousel-track-wrap');
+  if (!wrap) return;
+  let startX = 0;
+  wrap.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+  wrap.addEventListener('touchend', e => {
+    const diff = startX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) carouselMove(diff > 0 ? 1 : -1);
+  });
+}
+
+// ─── ANIMATED COUNTERS ──────────────────────────────────────────────────
+function initCounters() {
+  const counters = document.querySelectorAll('[data-target]');
+  const counterObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      const target = parseInt(el.dataset.target);
+      let current = 0;
+      const step = target / 40;
+      const iv = setInterval(() => {
+        current = Math.min(current + step, target);
+        el.textContent = Math.round(current) + (target >= 10 ? '+' : '');
+        if (current >= target) clearInterval(iv);
+      }, 40);
+      counterObs.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+  counters.forEach(c => counterObs.observe(c));
+}
+
+// ─── MOSAIC PHOTO REVEAL ────────────────────────────────────────────────
+function initMosaicReveal() {
+  const items = document.querySelectorAll('.mosaic-item');
+  const mosaicObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        mosaicObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+  items.forEach(el => mosaicObs.observe(el));
+}
+
+// ─── CARD TILT EFFECT ───────────────────────────────────────────────────
+function initTiltEffect() {
+  document.querySelectorAll('.carousel-card, .product-card, .story-element').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      if (e.target.tagName === 'BUTTON') return;
+      const rect = card.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = `translateY(-8px) perspective(600px) rotateY(${x * 8}deg) rotateX(${-y * 6}deg) scale(1.02)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
+  });
+
+  // Ensure add-to-cart buttons always fire correctly
+  document.querySelectorAll('.product-add').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const card = btn.closest('.product-card');
+      if (card) card.style.transform = '';
+    });
+  });
+}
+
+// ─── INIT ALL NEW FEATURES ──────────────────────────────────────────────
+setTimeout(() => {
+  initParallax();
+  initCarousel();
+  initCarouselTouch();
+  initCounters();
+  initMosaicReveal();
+  initTiltEffect();
+}, 500);
+
+window.addEventListener('resize', () => {
+  initCarousel();
+});
+</script>
+</body>
+</html>
